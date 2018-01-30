@@ -1,0 +1,11 @@
+LibriSpeech/ 
+.ipynb_checkpoints/
+.DS_Store
+__pycache__/
+*.tar.gz
+*.pyc
+*.json
+results/
+*.h5
+*.pickle
+*.zip
