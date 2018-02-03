@@ -1,7 +1,7 @@
 from keras import backend as K
 from keras.models import Model
 from keras.layers import (BatchNormalization, Conv1D, Conv2D, Dense, Input, 
-    TimeDistributed, Activation, Bidirectional, SimpleRNN, GRU, GRU)
+    TimeDistributed, Activation, Bidirectional, SimpleRNN, GRU, GRU, Dropout)
 
 def simple_rnn_model(input_dim, output_dim=29):
     """ Build a recurrent network for speech 
@@ -148,14 +148,33 @@ def bidirectional_rnn_model(input_dim, units, output_dim=29):
     return model
 
 def final_model(input_dim, units, bidirectional=False, recur_layers=3, activation='relu',\
-                dropout=0.0, recurrent_dropout=0.0, output_dim=29):
+                dropout=0.0, output_dim=29, use_cnn=False, filters=200, kernel_size=11,
+                conv_stride=2, conv_border_mode='valid'):
     """ Build a deep network for speech 
     """
      # Main acoustic input
     input_data = Input(name='the_input', shape=(None, input_dim))
 
+    # Add dropout to input
+    dropout_on_input = Dropout(dropout)(input_data)
+
+    if use_cnn:
+        # Add convolutional layer
+        conv_1d = Conv1D(filters, kernel_size,
+                         strides=conv_stride,
+                         padding=conv_border_mode,
+                         activation='relu',
+                         name='conv1d')(dropout_on_input)
+        # Add batch normalization
+        bn_cnn = BatchNormalization(name='bn_conv_1d')(conv_1d)
+        # Add dropout
+        dropout_cnn = Dropout(dropout)(bn_cnn)
+        input_to_rnn = dropout_cnn
+    else:
+        input_to_rnn = dropout_on_input
+
     # Add recurrent bidirectional layers
-    last_rnn_out = input_data
+    last_rnn_out = input_to_rnn
     for i in range(recur_layers):
         if bidirectional:
             simpl_rnn = Bidirectional(
@@ -163,17 +182,13 @@ def final_model(input_dim, units, bidirectional=False, recur_layers=3, activatio
                     activation=activation,
                     return_sequences=True,
                     implementation=2,
-                    name='rnn_{}'.format(i),
-                    dropout=dropout,
-                    recurrent_dropout=recurrent_dropout))(last_rnn_out)
+                    name='rnn_{}'.format(i)))(last_rnn_out)
         else:
             simpl_rnn = GRU(units,
                             activation=activation,
                             return_sequences=True,
                             implementation=2,
-                            name='rnn_{}'.format(i),
-                            dropout=dropout,
-                            recurrent_dropout=recurrent_dropout)(last_rnn_out)
+                            name='rnn_{}'.format(i))(last_rnn_out)
         # Add batch normalization
         bn_rnn = BatchNormalization()(simpl_rnn)
         last_rnn_out = bn_rnn
@@ -186,7 +201,13 @@ def final_model(input_dim, units, bidirectional=False, recur_layers=3, activatio
 
     # Specify the model
     model = Model(inputs=input_data, outputs=y_pred)
-    model.output_length = lambda x: x
+    if use_cnn:
+        model.output_length = lambda x: cnn_output_length(x,
+                                                          kernel_size,
+                                                          conv_border_mode,
+                                                          conv_stride)
+    else:
+        model.output_length = lambda x: x
     print(model.summary())
 
     return model
