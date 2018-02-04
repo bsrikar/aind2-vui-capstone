@@ -71,7 +71,7 @@ def train_model(input_to_softmax,
     checkpointer = ModelCheckpoint(filepath='results/'+save_model_path, save_best_only=True, verbose=0)
 
     # add early stoppping
-    early_stopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=3)
 
     # train the model
     hist = model.fit_generator(generator=audio_gen.next_train(), steps_per_epoch=steps_per_epoch,
