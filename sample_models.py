@@ -147,10 +147,26 @@ def bidirectional_rnn_model(input_dim, units, output_dim=29):
     print(model.summary())
     return model
 
-def final_model(input_dim, units, bidirectional=False, recur_layers=3, activation='relu',\
+def final_model(input_dim, units, bidirectional=False, recur_layers=3, activation='relu',
                 dropout=0.0, output_dim=29, use_cnn=False, filters=200, kernel_size=11,
                 conv_stride=2, conv_border_mode='valid'):
-    """ Build a deep network for speech 
+    """
+    Build a deep network for speech. The final model could be simple or deeper RNN,
+    with uni- or bidirectional layers, with or without CNN layer between input and RNN,
+    with or without dropouts after the input and CNN output
+
+    :param input_dim: expected a spectogram or MFCC dimension
+    :param units: output dimension of GRUs
+    :param bidirectional: true if a bidirection RNN should be used, false - otherwise
+    :param recur_layers: numer of RNN layers
+    :param activation: activation function, 'relu', 'tanh' for instance
+    :param dropout: dropout value for the dropout layers after the input and between CNN and RNN
+    :param output_dim: output dimension of the model
+    :param use_cnn: true a 1D CNN layer should be used
+    :param filters: filter dimension for 1D CNN
+    :param kernel_size: kernel size for 1D CNN
+    :param conv_stride: stride for 1D CNN
+    :param conv_border_mode: border mode for 1D CNN, 'valid' or 'same'
     """
      # Main acoustic input
     input_data = Input(name='the_input', shape=(None, input_dim))
